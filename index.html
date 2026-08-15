@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#10b981" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon/fridge-192.svg" />
+  <link rel="apple-touch-icon" href="icon/fridge-192.svg" />
+  <link rel="stylesheet" href="css/style.css" />
+  <title>在庫チェック</title>
+</head>
+<body>
+  <!-- ログイン画面 -->
+  <div id="login-screen" class="login-container">
+    <div class="icon" style="font-size:3rem;">📦</div>
+    <h2>在庫チェック</h2>
+    <p>カメラで撮影してAIが在庫を判定</p>
+    <button id="btn-login" class="btn btn-primary btn-full">Googleでログイン</button>
+  </div>
+
+  <!-- メインアプリ（ログイン後表示） -->
+  <div id="app" style="display:none;">
+    <header>
+      <h1>在庫チェック</h1>
+      <div class="header-user">
+        <img id="user-avatar" src="" alt="" />
+      </div>
+    </header>
+
+    <main>
+      <!-- 撮影画面 -->
+      <section id="page-camera" class="page active">
+        <div class="camera-container">
+          <video id="camera-preview" autoplay playsinline></video>
+          <canvas id="camera-canvas" style="display:none;"></canvas>
+          <img id="camera-captured" style="display:none;" alt="撮影画像" />
+        </div>
+        <div class="camera-actions">
+          <button id="btn-capture" class="btn btn-primary">撮影</button>
+          <label class="btn btn-outline">
+            選択
+            <input type="file" id="file-input" accept="image/*" style="display:none;" />
+          </label>
+          <button id="btn-retake" class="btn btn-outline" style="display:none;">撮り直し</button>
+        </div>
+        <button id="btn-detect" class="btn btn-primary btn-full" style="display:none;">AI判定を実行</button>
+
+        <!-- 判定結果 -->
+        <div id="detection-results" class="detection-results" style="display:none;">
+          <h3 style="font-size:0.95rem; margin-bottom:10px;">判定結果</h3>
+          <div id="detection-list"></div>
+          <button id="btn-add-detected" class="btn btn-primary btn-full" style="margin-top:12px;">選択したアイテムを在庫に追加</button>
+        </div>
+
+        <!-- ローディング -->
+        <div id="detection-loading" class="loading" style="display:none;">
+          <div class="spinner"></div>
+          <span>判定中...</span>
+        </div>
+      </section>
+
+      <!-- 在庫リスト -->
+      <section id="page-inventory" class="page">
+        <div id="inventory-list"></div>
+        <div id="inventory-empty" class="empty-state">
+          <div class="icon">📦</div>
+          <p>在庫アイテムがありません</p>
+          <p style="font-size:0.8rem; margin-top:4px;">＋ボタンで追加できます</p>
+        </div>
+      </section>
+
+      <!-- 買い物リスト -->
+      <section id="page-shopping" class="page">
+        <div id="shopping-list"></div>
+        <div id="shopping-empty" class="empty-state">
+          <div class="icon">🛒</div>
+          <p>買い物リストは空です</p>
+        </div>
+      </section>
+
+      <!-- 設定 -->
+      <section id="page-settings" class="page">
+        <div class="setting-section">
+          <h3>AI判定エンジン</h3>
+          <div class="card">
+            <div class="form-group">
+              <label>使用エンジン</label>
+              <select id="setting-engine">
+                <option value="local">ローカル（TensorFlow.js）</option>
+                <option value="cloud">クラウド（Gemini API）</option>
+              </select>
+            </div>
+            <div id="cloud-settings" style="display:none;">
+              <div class="form-group">
+                <label>Gemini APIキー</label>
+                <input type="password" id="setting-api-key" placeholder="APIキーを入力" />
+              </div>
+              <p style="font-size:0.75rem; color:var(--status-low);">※ クラウド使用時、画像がGoogleサーバーに送信されます</p>
+            </div>
+          </div>
+        </div>
+        <div class="setting-section">
+          <h3>アカウント</h3>
+          <div class="card">
+            <div class="setting-row">
+              <span id="setting-user-name">未ログイン</span>
+              <button id="btn-logout" class="btn btn-outline" style="padding:6px 12px; font-size:0.8rem;">ログアウト</button>
+            </div>
+          </div>
+        </div>
+        <div class="setting-section">
+          <h3>データ</h3>
+          <div class="card">
+            <button id="btn-clear-data" class="btn btn-danger btn-full">データをすべて削除</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FAB（在庫追加ボタン） -->
+    <button id="fab-add" class="fab" title="アイテム追加">+</button>
+
+    <!-- ボトムナビ -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-page="camera">
+        <span class="nav-icon">📷</span>
+        <span>撮影</span>
+      </button>
+      <button class="nav-btn" data-page="inventory">
+        <span class="nav-icon">📦</span>
+        <span>在庫</span>
+      </button>
+      <button class="nav-btn" data-page="shopping">
+        <span class="nav-icon">🛒</span>
+        <span>買物</span>
+      </button>
+      <button class="nav-btn" data-page="settings">
+        <span class="nav-icon">⚙️</span>
+        <span>設定</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- アイテム追加モーダル -->
+  <div id="modal-add-item" class="modal-overlay">
+    <div class="modal">
+      <h2>アイテム追加</h2>
+      <div class="form-group">
+        <label>品名</label>
+        <input type="text" id="input-item-name" placeholder="例: 牛乳" />
+      </div>
+      <div class="form-group">
+        <label>カテゴリ</label>
+        <select id="input-item-category">
+          <option value="食品">食品</option>
+          <option value="日用品">日用品</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>状態</label>
+        <select id="input-item-status">
+          <option value="あり">あり</option>
+          <option value="残りわずか">残りわずか</option>
+          <option value="なし">なし</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button id="btn-modal-cancel" class="btn btn-outline">キャンセル</button>
+        <button id="btn-modal-save" class="btn btn-primary">追加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

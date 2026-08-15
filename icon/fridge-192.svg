@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <!-- 背景 -->
+  <rect width="192" height="192" rx="32" fill="#10b981"/>
+  <!-- 冷蔵庫本体 -->
+  <rect x="56" y="24" width="80" height="144" rx="8" fill="#ffffff"/>
+  <!-- 上段（冷凍室）と下段（冷蔵室）の仕切り -->
+  <line x1="56" y1="72" x2="136" y2="72" stroke="#10b981" stroke-width="2.5"/>
+  <!-- 上段ハンドル -->
+  <rect x="120" y="44" width="4" height="20" rx="2" fill="#10b981"/>
+  <!-- 下段ハンドル -->
+  <rect x="120" y="84" width="4" height="28" rx="2" fill="#10b981"/>
+  <!-- 脚 -->
+  <rect x="64" y="168" width="8" height="8" rx="2" fill="#ffffff"/>
+  <rect x="120" y="168" width="8" height="8" rx="2" fill="#ffffff"/>
+</svg>
