@@ -36,9 +36,6 @@ export class CloudEngine {
     // img要素からBase64を取得
     const base64Data = this.getBase64FromImage(image);
 
-    // Gemini API呼び出し
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${this.apiKey}`;
-
     const requestBody = {
       contents: [{
         parts: [
@@ -59,19 +56,69 @@ export class CloudEngine {
       }]
     };
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
+    // フォールバック付きリクエスト: 3.7-flash → リトライ → 3.6-flash
+    const models = ['gemini-3.7-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
+    let lastError = null;
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(`API エラー: ${response.status} ${errData.error?.message || ''}`);
+    for (let i = 0; i < models.length; i++) {
+      if (i > 0) await this.wait(3000);
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${models[i]}:generateContent?key=${this.apiKey}`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          this.incrementUsageCount();
+          return this.parseResponse(data);
+        }
+
+        // 503は一時的エラーなのでリトライ
+        if (response.status === 503) {
+          lastError = new Error(`API エラー: 503 サーバー混雑中`);
+          continue;
+        }
+
+        // その他のエラーは即座にスロー
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(`API エラー: ${response.status} ${errData.error?.message || ''}`);
+      } catch (err) {
+        if (err.message.startsWith('API エラー:') && !err.message.includes('503')) throw err;
+        lastError = err;
+      }
     }
 
-    const data = await response.json();
-    return this.parseResponse(data);
+    throw lastError || new Error('すべてのリクエストが失敗しました');
+  }
+
+  /** 待機 */
+  wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /** API使用量カウント */
+  incrementUsageCount() {
+    const today = new Date().toISOString().slice(0, 10);
+    const stored = JSON.parse(localStorage.getItem('zaiko-api-usage') || '{}');
+    if (stored.date !== today) {
+      stored.date = today;
+      stored.count = 0;
+    }
+    stored.count++;
+    localStorage.setItem('zaiko-api-usage', JSON.stringify(stored));
+  }
+
+  /** 今日の使用量を取得 */
+  static getUsageToday() {
+    const today = new Date().toISOString().slice(0, 10);
+    const stored = JSON.parse(localStorage.getItem('zaiko-api-usage') || '{}');
+    if (stored.date !== today) return 0;
+    return stored.count || 0;
   }
 
   /** リソース解放 */

@@ -148,15 +148,32 @@ function showItemActions(itemId) {
   const item = state.inventoryItems.find(i => i.id === itemId);
   if (!item) return;
 
-  const statuses = ['あり', '残りわずか', 'なし'];
-  const nextStatus = statuses[(statuses.indexOf(item.status) + 1) % statuses.length];
+  const action = prompt(
+    `「${item.name}」（${item.status}）\n\n操作を選択:\n1 = 状態変更\n2 = 買い物リストに追加\n3 = 削除`,
+    '1'
+  );
 
-  // シンプルにタップで状態サイクル
-  inventoryService.updateItem(state.user.uid, itemId, {
-    status: nextStatus,
-    lastCheckedAt: new Date()
-  });
-  showToast(`${item.name}: ${nextStatus}`);
+  if (action === '1') {
+    const statuses = ['あり', '残りわずか', 'なし'];
+    const nextStatus = statuses[(statuses.indexOf(item.status) + 1) % statuses.length];
+    inventoryService.updateItem(state.user.uid, itemId, {
+      status: nextStatus,
+      lastCheckedAt: new Date()
+    });
+    showToast(`${item.name}: ${nextStatus}`);
+  } else if (action === '2') {
+    shoppingService.addToList(state.user.uid, {
+      name: item.name,
+      category: item.category,
+      sourceItemId: item.id
+    });
+    showToast(`${item.name} を買い物リストに追加`);
+  } else if (action === '3') {
+    if (confirm(`「${item.name}」を削除しますか？`)) {
+      inventoryService.deleteItem(state.user.uid, itemId);
+      showToast(`${item.name} を削除しました`);
+    }
+  }
 }
 
 // --- モーダル ---
@@ -234,6 +251,7 @@ async function handleDetect() {
   try {
     const results = await detectionService.detect(img);
     renderDetectionResults(results);
+    updateUsageDisplay();
   } catch (err) {
     alert('判定に失敗しました: ' + err.message);
     document.getElementById('btn-detect').style.display = 'block';
@@ -300,6 +318,7 @@ function initSettings() {
   engineSelect.value = savedEngine;
   cloudSettings.style.display = savedEngine === 'cloud' ? 'block' : 'none';
   document.getElementById('setting-api-key').value = savedApiKey;
+  updateUsageDisplay();
 
   engineSelect.addEventListener('change', async () => {
     const value = engineSelect.value;
@@ -314,6 +333,12 @@ function initSettings() {
       detectionService.currentEngine.setApiKey(e.target.value);
     }
   });
+}
+
+function updateUsageDisplay() {
+  const count = CloudEngine.getUsageToday();
+  const el = document.getElementById('api-usage-count');
+  if (el) el.textContent = count;
 }
 
 async function switchEngine(engineName) {
