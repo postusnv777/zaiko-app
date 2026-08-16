@@ -144,36 +144,79 @@ function renderShopping(items) {
 }
 
 // --- アイテムアクション ---
+let actionTargetId = null;
+
 function showItemActions(itemId) {
   const item = state.inventoryItems.find(i => i.id === itemId);
   if (!item) return;
+  actionTargetId = itemId;
+  document.getElementById('action-item-name').textContent = `${item.name}（${item.status}）`;
+  document.getElementById('modal-item-actions').classList.add('active');
+}
 
-  const action = prompt(
-    `「${item.name}」（${item.status}）\n\n操作を選択:\n1 = 状態変更\n2 = 買い物リストに追加\n3 = 削除`,
-    '1'
-  );
+function closeItemActions() {
+  document.getElementById('modal-item-actions').classList.remove('active');
+  actionTargetId = null;
+}
 
-  if (action === '1') {
-    const statuses = ['あり', '残りわずか', 'なし'];
-    const nextStatus = statuses[(statuses.indexOf(item.status) + 1) % statuses.length];
-    inventoryService.updateItem(state.user.uid, itemId, {
-      status: nextStatus,
-      lastCheckedAt: new Date()
-    });
-    showToast(`${item.name}: ${nextStatus}`);
-  } else if (action === '2') {
-    shoppingService.addToList(state.user.uid, {
-      name: item.name,
-      category: item.category,
-      sourceItemId: item.id
-    });
-    showToast(`${item.name} を買い物リストに追加`);
-  } else if (action === '3') {
-    if (confirm(`「${item.name}」を削除しますか？`)) {
-      inventoryService.deleteItem(state.user.uid, itemId);
-      showToast(`${item.name} を削除しました`);
-    }
+function handleActionStatus() {
+  const item = state.inventoryItems.find(i => i.id === actionTargetId);
+  if (!item) return;
+  const statuses = ['あり', '残りわずか', 'なし'];
+  const nextStatus = statuses[(statuses.indexOf(item.status) + 1) % statuses.length];
+  inventoryService.updateItem(state.user.uid, actionTargetId, {
+    status: nextStatus,
+    lastCheckedAt: new Date()
+  });
+  showToast(`${item.name}: ${nextStatus}`);
+  closeItemActions();
+}
+
+function handleActionEdit() {
+  const item = state.inventoryItems.find(i => i.id === actionTargetId);
+  if (!item) return;
+  closeItemActions();
+  // 編集モーダルを開く
+  document.getElementById('edit-item-name').value = item.name;
+  document.getElementById('edit-item-category').value = item.category;
+  document.getElementById('edit-item-status').value = item.status;
+  document.getElementById('modal-edit-item').classList.add('active');
+}
+
+async function handleEditSave() {
+  const name = document.getElementById('edit-item-name').value.trim();
+  const category = document.getElementById('edit-item-category').value;
+  const status = document.getElementById('edit-item-status').value;
+  if (!name) { alert('品名を入力してください'); return; }
+
+  await inventoryService.updateItem(state.user.uid, actionTargetId, {
+    name, category, status, lastCheckedAt: new Date()
+  });
+  showToast(`${name} を更新しました`);
+  document.getElementById('modal-edit-item').classList.remove('active');
+  actionTargetId = null;
+}
+
+function handleActionShopping() {
+  const item = state.inventoryItems.find(i => i.id === actionTargetId);
+  if (!item) return;
+  shoppingService.addToList(state.user.uid, {
+    name: item.name,
+    category: item.category,
+    sourceItemId: item.id
+  });
+  showToast(`${item.name} を買い物リストに追加`);
+  closeItemActions();
+}
+
+function handleActionDelete() {
+  const item = state.inventoryItems.find(i => i.id === actionTargetId);
+  if (!item) return;
+  if (confirm(`「${item.name}」を削除しますか？`)) {
+    inventoryService.deleteItem(state.user.uid, actionTargetId);
+    showToast(`${item.name} を削除しました`);
   }
+  closeItemActions();
 }
 
 // --- モーダル ---
@@ -414,6 +457,25 @@ async function init() {
   document.getElementById('btn-modal-save').addEventListener('click', saveNewItem);
   document.getElementById('modal-add-item').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeAddModal();
+  });
+
+  // アイテムアクションモーダル
+  document.getElementById('btn-action-status').addEventListener('click', handleActionStatus);
+  document.getElementById('btn-action-edit').addEventListener('click', handleActionEdit);
+  document.getElementById('btn-action-shopping').addEventListener('click', handleActionShopping);
+  document.getElementById('btn-action-delete').addEventListener('click', handleActionDelete);
+  document.getElementById('btn-action-cancel').addEventListener('click', closeItemActions);
+  document.getElementById('modal-item-actions').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeItemActions();
+  });
+
+  // 編集モーダル
+  document.getElementById('btn-edit-save').addEventListener('click', handleEditSave);
+  document.getElementById('btn-edit-cancel').addEventListener('click', () => {
+    document.getElementById('modal-edit-item').classList.remove('active');
+  });
+  document.getElementById('modal-edit-item').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) document.getElementById('modal-edit-item').classList.remove('active');
   });
 
   // 設定

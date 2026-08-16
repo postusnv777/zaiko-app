@@ -178,6 +178,64 @@
     </div>
   </div>
 
+  <!-- アイテムアクションモーダル -->
+  <div id="modal-item-actions" class="modal-overlay">
+    <div class="modal">
+      <h2 id="action-item-name">アイテム操作</h2>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+        <button id="btn-action-status" class="btn btn-primary btn-full">状態変更</button>
+        <button id="btn-action-shopping" class="btn btn-outline btn-full">買い物リストに追加</button>
+        <button id="btn-action-delete" class="btn btn-danger btn-full">削除</button>
+        <button id="btn-action-cancel" class="btn btn-outline btn-full" style="margin-top:8px;">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- アイテムアクションモーダル -->
+  <div id="modal-item-actions" class="modal-overlay">
+    <div class="modal">
+      <h2 id="action-item-name">アイテム操作</h2>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+        <button id="btn-action-status" class="btn btn-primary btn-full">状態変更</button>
+        <button id="btn-action-edit" class="btn btn-outline btn-full">編集</button>
+        <button id="btn-action-shopping" class="btn btn-outline btn-full">買い物リストに追加</button>
+        <button id="btn-action-delete" class="btn btn-danger btn-full">削除</button>
+        <button id="btn-action-cancel" class="btn btn-outline btn-full" style="margin-top:4px;">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- アイテム編集モーダル -->
+  <div id="modal-edit-item" class="modal-overlay">
+    <div class="modal">
+      <h2>アイテム編集</h2>
+      <div class="form-group">
+        <label>品名</label>
+        <input type="text" id="edit-item-name" />
+      </div>
+      <div class="form-group">
+        <label>カテゴリ</label>
+        <select id="edit-item-category">
+          <option value="食品">食品</option>
+          <option value="日用品">日用品</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>状態</label>
+        <select id="edit-item-status">
+          <option value="あり">あり</option>
+          <option value="残りわずか">残りわずか</option>
+          <option value="なし">なし</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button id="btn-edit-cancel" class="btn btn-outline">キャンセル</button>
+        <button id="btn-edit-save" class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
   <!-- トースト -->
   <div id="toast" class="toast"></div>
 
