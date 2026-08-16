@@ -1,5 +1,5 @@
 // Service Worker - 在庫チェックアプリ
-const CACHE_NAME = 'zaiko-app-v2';
+const CACHE_NAME = 'zaiko-app-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
